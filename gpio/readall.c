@@ -354,7 +354,7 @@ void doReadall (void)
 
   /**/ if ((model == PI_MODEL_A) || (model == PI_MODEL_B))
     abReadall (model, rev) ;
-  else if ((model == PI_MODEL_BP) || (model == PI_MODEL_AP) ||
+  else if ((model >= BPI_MODEL_MIN) || (model == PI_MODEL_BP) || (model == PI_MODEL_AP) ||
 	(model == PI_MODEL_2)    ||
 	(model == PI_MODEL_3AP)  ||
 	(model == PI_MODEL_3B)   || (model == PI_MODEL_3BP) ||
