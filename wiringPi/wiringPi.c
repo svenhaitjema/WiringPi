@@ -203,17 +203,6 @@ volatile unsigned int *_wiringPiClk ;
 volatile unsigned int *_wiringPiPads ;
 volatile unsigned int *_wiringPiTimer ;
 volatile unsigned int *_wiringPiTimerIrqRaw ;
-#ifdef BPI
-volatile uint32_t *gpio ;
-volatile uint32_t *pwm ;
-volatile uint32_t *clk ;
-volatile uint32_t *pads ;
-#else
-static volatile uint32_t *gpio ;
-static volatile uint32_t *pwm ;
-static volatile uint32_t *clk ;
-static volatile uint32_t *pads ;
-#endif
 
 
 // Data for use with the boardId functions.
