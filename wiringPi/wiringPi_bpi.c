@@ -83,10 +83,10 @@ extern int wiringPiDebug ;
 extern int *pinToGpio ;
 extern int *physToGpio ;
 extern int sysFds [] ;
-extern volatile uint32_t *gpio ;
-extern volatile uint32_t *pwm ;
-extern volatile uint32_t *clk ;
-extern volatile uint32_t *pads ;
+extern volatile unsigned int *gpio ;
+extern volatile unsigned int *pwm ;
+extern volatile unsigned int *clk ;
+extern volatile unsigned int *pads ;
 #define BLOCK_SIZE              (4*1024)
 extern void initialiseEpoch ();
 #if 0
@@ -876,6 +876,12 @@ void sunxi_pullUpDnControl (int pin, int pud)
   if (wiringPiDebug)
 	printf("func:%s pin:%d,bank:%d index:%d sub:%d phyaddr:0x%x\n",__func__, pin,bank,index,sub,phyaddr); 
   
+  switch(pud) {
+    case PUD_DOWN: pud=0x2; break;
+    case PUD_UP:   pud=0x1; break;
+    default:       pud=0x0; break;
+  }
+  
   if(BP_PIN_MASK[bank][index] != -1)
   {  //PI13~PI21 need check again
     regval = sunxi_gpio_readl(phyaddr, bank);
@@ -904,8 +910,6 @@ void sunxi_pullUpDnControl (int pin, int pud)
   
   return ;
 }
-
-#ifdef BPI
 
 int bpi_getAlt (int pin)
 {
@@ -1326,6 +1330,12 @@ struct RegOffset
   int spi_offset;
 };
 
+typedef struct 
+{
+	char deviceTreeModel[255];
+	int boardModel;
+} BoardHardwareDeviceTreeInfo;
+
 struct BPIBoards
 {
   const char *name;
@@ -1383,11 +1393,38 @@ struct BPIBoards bpiboard [] =
   { "bpi-m2p_H2+", 10701, 30, 1, 2, 5, 0, pinToGpio_BPI_M2P, physToGpio_BPI_M2P, pinTobcm_BPI_M2P, M2P_I2C_DEV, M2P_SPI_DEV, {M2P_PWM_OFFSET,M2P_I2C_OFFSET,M2P_SPI_OFFSET} },
   { "bpi-m2p_H5",  10801, 31, 1, 2, 5, 0, pinToGpio_BPI_M2P, physToGpio_BPI_M2P, pinTobcm_BPI_M2P, M2P_I2C_DEV, M2P_SPI_DEV, {M2P_PWM_OFFSET,M2P_I2C_OFFSET,M2P_SPI_OFFSET} },
   { "bpi-m2u_V40", 10901, 32, 1, 3, 5, 0, pinToGpio_BPI_M2U, physToGpio_BPI_M2U, pinTobcm_BPI_M2U, M2U_I2C_DEV, M2U_SPI_DEV, {M2U_PWM_OFFSET,M2U_I2C_OFFSET,M2U_SPI_OFFSET} },
-  { "bpi-m2z",	   11001, 33, 1, 1, 5, 0, pinToGpio_BPI_M2P, physToGpio_BPI_M2P, pinTobcm_BPI_M2P, M2P_I2C_DEV, M2P_SPI_DEV, {M2P_PWM_OFFSET,M2P_I2C_OFFSET,M2P_SPI_OFFSET} },
+  { "bpi-m2z",	   11001, BPI_MODEL_M2Z, 1, 1, 5, 0, pinToGpio_BPI_M2P, physToGpio_BPI_M2P, pinTobcm_BPI_M2P, M2P_I2C_DEV, M2P_SPI_DEV, {M2P_PWM_OFFSET,M2P_I2C_OFFSET,M2P_SPI_OFFSET} },
   { NULL,		0, 0, 1, 2, 5, 0, NULL, NULL, NULL, NULL, NULL, {-1, -1, -1} },
 } ;
 
+BoardHardwareDeviceTreeInfo gAllBoardHardwareDeviceTreeInfo[] = {
+	{"Banana Pi M2 Zero", 33 }, 
+};
+
 extern int bpi_found;
+
+int getBoardModelbyDeviceTreeModel()
+{
+	FILE *f;
+	size_t i;
+	int ret = -1;
+	char line[1024];
+
+	if (!(f = fopen("/proc/device-tree/model", "r"))) {
+		return -1;
+	}
+	if (fgets(line, sizeof(line), f)) {
+		//LOGD("Found device tree model: %s\n", line);
+		for (i=0; i<(sizeof(gAllBoardHardwareDeviceTreeInfo)/sizeof(BoardHardwareDeviceTreeInfo)); i++) {
+			if (!strcmp(gAllBoardHardwareDeviceTreeInfo[i].deviceTreeModel, line)) {
+				ret = gAllBoardHardwareDeviceTreeInfo[i].boardModel;
+				break;
+			}
+		}
+	}
+	fclose(f);
+	return ret;
+}
 
 int bpi_piGpioLayout (void)
 {
@@ -1400,6 +1437,20 @@ int bpi_piGpioLayout (void)
   if (gpioLayout != -1)	// No point checking twice
     return gpioLayout ;
 
+  // Check board via device-tree model
+  int boardModel = getBoardModelbyDeviceTreeModel();
+  if (boardModel>=0) {
+    gpioLayout = boardModel;
+    if (gpioLayout >= BPI_MODEL_MIN) {
+      if (wiringPiDebug)
+        printf ("Banana Pi found layout %d\n", gpioLayout) ;
+      bpi_found = 1;
+      return gpioLayout;     
+    }
+  }
+
+  if (wiringPiDebug)
+    printf ("Banana Pi search for name in /var/lib/bananapi/board.sh\n") ;
   bpi_found = 0; // -1: not init, 0: init but not found, 1: found
   if ((bpiFd = fopen("/var/lib/bananapi/board.sh", "r")) == NULL) {
     return -1;
@@ -1415,7 +1466,7 @@ int bpi_piGpioLayout (void)
         //gpioLayout = board->gpioLayout;
         gpioLayout = board->model; // BPI: use model to replace gpioLayout
         //printf("BPI: name[%s] gpioLayout(%d)\n",board->name, gpioLayout);
-        if(gpioLayout >= 21) {
+        if(gpioLayout >= BPI_MODEL_MIN) {
           bpi_found = 1;
           break;
         }
@@ -1427,6 +1478,8 @@ int bpi_piGpioLayout (void)
   }
   fclose(bpiFd);
   //printf("BPI: name[%s] gpioLayout(%d)\n",board->name, gpioLayout);
+  if (wiringPiDebug && bpi_found>0)
+    printf ("Banana Pi '%s' found layout %d\n", board->name,  gpioLayout) ;
   return gpioLayout ;
 }
 
@@ -1438,7 +1491,7 @@ void bpi_piBoardId (int *model, int *rev, int *mem, int *maker, int *warranty)
 
   gpioLayout = piGpioLayout () ;
   //printf("BPI: gpioLayout(%d)\n", gpioLayout);
-  if(gpioLayout>=21) {
+  if(gpioLayout>=BPI_MODEL_MIN) {
     board = &bpiboard[gpioLayout];
     //printf("BPI: name[%s] gpioLayout(%d)\n",board->name, gpioLayout);
     bRev      = board->rev;
@@ -1487,28 +1540,28 @@ int bpi_wiringPiSetup (void)
   gpio_lm = (uint32_t *)mmap(0, BLOCK_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, GPIO_BASE_LM_BP);
 
   gpio = (uint32_t *)mmap(0, BLOCK_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, GPIO_BASE_BP);
-  if (((int32_t)gpio == -1) || ((int32_t)gpio == -1 ))
+  if (gpio_lm == MAP_FAILED || gpio == MAP_FAILED )
     return wiringPiFailure (WPI_ALMOST,"wiringPiSetup: mmap (GPIO) failed: %s\n", strerror (errno)) ;
 
   // PWM
   pwm = (uint32_t *)mmap(0, BLOCK_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, GPIO_PWM_BP) ;
-  if ((int32_t)pwm == -1)
+  if (pwm == MAP_FAILED)
     return wiringPiFailure (WPI_ALMOST,"wiringPiSetup: mmap (PWM) failed: %s\n", strerror (errno)) ;
 			 
   // Clock control (needed for PWM)
   clk = (uint32_t *)mmap(0, BLOCK_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, CLOCK_BASE_BP) ;
-  if ((int32_t)clk == -1)
+  if (clk == MAP_FAILED)
     return wiringPiFailure (WPI_ALMOST,"wiringPiSetup: mmap (CLOCK) failed: %s\n", strerror (errno)) ;
 			 
   // The drive pads
   pads = (uint32_t *)mmap(0, BLOCK_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, GPIO_PADS_BP) ;
-  if ((int32_t)pads == -1)
+  if (pads == MAP_FAILED)
     return wiringPiFailure (WPI_ALMOST,"wiringPiSetup: mmap (PADS) failed: %s\n", strerror (errno)) ;
 
 #ifdef	USE_TIMER
 // The system timer
   timer = (uint32_t *)mmap(0, BLOCK_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, GPIO_TIMER_BP) ;
-  if ((int32_t)timer == -1)
+  if (timer == MAP_FAILED)
     return wiringPiFailure (WPI_ALMOST,"wiringPiSetup: mmap (TIMER) failed: %s\n", strerror (errno)) ;
 
 // Set the timer to free-running, 1MHz.
@@ -1572,4 +1625,3 @@ static int bpi_wiringPiSetupRegOffset(int mode)
 
   return -1;
 }
-#endif /* BPI */

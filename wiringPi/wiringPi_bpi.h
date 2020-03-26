@@ -24,7 +24,6 @@
 #ifndef	__WIRING_BPI_H__
 #define	__WIRING_BPI_H__
 
-#define BPI	1
 /* define in OLD wiringPi.h */
 #define I2C_PIN         7
 #define SPI_PIN         8
@@ -32,7 +31,9 @@
 #define PULLDOWN        6
 #define PULLOFF         7
 
+// Need to be > PI_MODEL_x,  actual 17
 #define BPI_MODEL_MIN   21
+#define	BPI_MODEL_M2Z 	33
 
 // Function prototypes
 //	c++ wrappers thanks to a comment by Nick Lott

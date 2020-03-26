@@ -42,12 +42,8 @@
 
 #define	PI_GPIO_MASK	(0xFFFFFFC0)
 
-// Handy defines
-#define BPI	1
-
-#ifdef	BPI
+// Banana Pi implementations
 #include <wiringPi_bpi.h>
-#endif
 
 // wiringPi modes
 
@@ -202,6 +198,7 @@ extern struct wiringPiNodeStruct *wiringPiFindNode (int pin) ;
 extern struct wiringPiNodeStruct *wiringPiNewNode  (int pinBase, int numPins) ;
 
 extern void wiringPiVersion	(int *major, int *minor) ;
+extern void wiringPiVersionPatch (int *patch) ;
 extern int  wiringPiSetup       (void) ;
 extern int  wiringPiSetupSys    (void) ;
 extern int  wiringPiSetupGpio   (void) ;

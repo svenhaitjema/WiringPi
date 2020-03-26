@@ -35,6 +35,7 @@
 #include <sys/stat.h>
 
 #include <wiringPi.h>
+#include <wiringPi_bpi.h>
 #include <wpiExtensions.h>
 
 #include <gertboard.h>
@@ -62,7 +63,7 @@ extern void doQmode      (int argc, char *argv []) ;
 
 int wpMode ;
 
-char *usage = "Usage: gpio -v\n"
+const char *usage = "Usage: gpio -v\n"
               "       gpio -h\n"
               "       gpio [-g|-1] ...\n"
               "       gpio [-d] ...\n"
@@ -87,7 +88,8 @@ char *usage = "Usage: gpio -v\n"
 	      "       gpio gbr <channel>\n"
 	      "       gpio gbw <channel> <value>" ;	// No trailing newline needed here.
 
-
+const char *CopyrightAddition =  "Modifications by BPI-SINOVOIP and GC2, experimental version\n" ;
+ 
 #ifdef	NOT_FOR_NOW
 /*
  * decodePin:
@@ -1264,17 +1266,19 @@ static void doVersion (char *argv [])
   char name [80] ;
   FILE *fd ;
 
-  int vMaj, vMin ;
+  int vMaj = 0, vMin = 0, vPatch = 0;
 
   wiringPiVersion (&vMaj, &vMin) ;
-  printf ("gpio version: %d.%d\n", vMaj, vMin) ;
+  wiringPiVersionPatch (&vPatch) ;
+  printf ("gpio version: %d.%d.%d\n", vMaj, vMin, vPatch) ;
   printf ("Copyright (c) 2012-2018 Gordon Henderson\n") ;
+  printf (CopyrightAddition) ;
   printf ("This is free software with ABSOLUTELY NO WARRANTY.\n") ;
   printf ("For details type: %s -warranty\n", argv [0]) ;
   printf ("\n") ;
   piBoardId (&model, &rev, &mem, &maker, &warranty) ;
 
-  printf ("Raspberry Pi Details:\n") ;
+  printf ("Board Details:\n") ;
   printf ("  Type: %s, Revision: %s, Memory: %dMB, Maker: %s %s\n", 
       piModelNames [model], piRevisionNames [rev], piMemorySize [mem], piMakerNames [maker], warranty ? "[Out of Warranty]" : "") ;
 
@@ -1294,7 +1298,7 @@ static void doVersion (char *argv [])
   }
 
   if (stat ("/dev/gpiomem", &statBuf) == 0)		// User level GPIO is GO
-    printf ("  * This Raspberry Pi supports user-level GPIO access.\n") ;
+    printf ("  * Board supports user-level GPIO access.\n") ;
   else
     printf ("  * Root or sudo required for GPIO access.\n") ;
 }
@@ -1354,6 +1358,7 @@ int main (int argc, char *argv [])
   {
     printf ("gpio version: %s\n", VERSION) ;
     printf ("Copyright (c) 2012-2018 Gordon Henderson\n") ;
+    printf (CopyrightAddition) ;
     printf ("\n") ;
     printf ("    This program is free software; you can redistribute it and/or modify\n") ;
     printf ("    it under the terms of the GNU Leser General Public License as published\n") ;

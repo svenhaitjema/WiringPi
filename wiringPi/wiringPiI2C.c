@@ -56,6 +56,7 @@
 
 #include "wiringPi.h"
 #include "wiringPiI2C.h"
+#include "wiringPi_bpi.h"
 
 // I2C definitions
 
@@ -224,15 +225,14 @@ int wiringPiI2CSetup (const int devId)
 
   rev = piGpioLayout () ;
 
-#ifdef BPI
-  if(bpi_wiringPiSetupI2C(rev, &device) < 0)
-  	return wiringPiFailure (WPI_ALMOST, "BPI, NO I2C device defined %s\n", strerror (errno)) ;
-#else
+  if (rev>=BPI_MODEL_MIN) {
+    if (bpi_wiringPiSetupI2C(rev, &device) < 0) 
+  	  return wiringPiFailure (WPI_ALMOST, "BPI, NO I2C device defined %s\n", strerror (errno)) ;
+  }
   if (rev == 1)
     device = "/dev/i2c-0" ;
   else
     device = "/dev/i2c-1" ;
-#endif
 
   return wiringPiI2CSetupInterface (device, devId) ;
 }

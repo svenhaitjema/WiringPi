@@ -83,18 +83,26 @@ fi
 # Only if you know what you're doing!
 
 if [ x$1 = "xdebian" ]; then
+  if [ "$2" ]; then
+    DEBVER=$2
+  else
+    DEBVER="1"
+  fi
   here=`pwd`
+  VERSION=`cat $here/version.h | grep "VERSION " | cut -d " " -f 3 | tr -d '"'`
+  echo "Building debian package nr ${DEBVER} for wiringpi version ${VERSION} ..." 
   cd debian-template/wiringPi
   rm -rf usr
   cd $here/wiringPi
-  make install-deb
+  make install-deb PREFIX=
   cd $here/devLib
-  make install-deb INCLUDE='-I. -I../wiringPi'
+  make install-deb PREFIX= INCLUDE='-I. -I../wiringPi'
   cd $here/gpio
-  make install-deb INCLUDE='-I../wiringPi -I../devLib' LDFLAGS=-L../debian-template/wiringPi/usr/lib
+  make install-deb PREFIX= INCLUDE='-I../wiringPi -I../devLib' LDFLAGS=-L../debian-template/wiringPi/usr/lib
   cd $here/debian-template
+  sed -i 's/^Version: .*/Version: '"${VERSION}"'/g' wiringPi/DEBIAN/control
   fakeroot dpkg-deb --build wiringPi
-  mv wiringPi.deb  wiringpi-`cat $here/VERSION`-1.deb
+  mv wiringPi.deb ../wiringpi-${VERSION}-${DEBVER}_armhf.deb && echo "wiringpi debian package created."
   exit
 fi
 
