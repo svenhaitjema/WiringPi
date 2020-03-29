@@ -1,5 +1,5 @@
-Unofficial WiringPi Mirror
-==========================
+Unofficial WiringPi Mirror Fork
+===============================
 
 This is an unofficial mirror of WiringPi to support ports (Python/Ruby/etc).  With the
 [end of official development](http://wiringpi.com/wiringpi-deprecated/), this repository
@@ -17,3 +17,11 @@ Pull-requests may be accepted to add or fix support for newer hardware, but new 
 other changes will not be accepted.
 
 For support, comments, questions, etc please join the WiringPi Discord channel: https://discord.gg/SM4WUVG
+
+## Modifcations by GC2
+
+Brunch bpi-pi2-merge is a combination of [Unofficial WiringPi](https://github.com/WiringPi/WiringPi) and [BPI-SINOVOIP /BPI-WiringPi2](https://github.com/BPI-SINOVOIP/BPI-WiringPi2).  
+The binary (tools and library) can support both worlds Raspberry Pi and Banana Pi M2 Zero.
+
+We provide no support! Please contact base repository maintainers if you you problems.
+
