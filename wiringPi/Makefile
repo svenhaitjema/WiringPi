@@ -37,7 +37,7 @@ DYNAMIC=libwiringPi.so.$(VERSION)
 #DEBUG	= -g -O0
 DEBUG	= -O2
 CC	= gcc
-INCLUDE	= -I.
+INCLUDE	= -I. -I./board
 DEFS	= -D_GNU_SOURCE
 CFLAGS	= $(DEBUG) $(DEFS) -Wformat=2 -Wall -Wextra -Winline $(INCLUDE) -pipe -fPIC
 #CFLAGS	= $(DEBUG) $(DEFS) -Wformat=2 -Wall -Wextra -Wconversion -Winline $(INCLUDE) -pipe -fPIC
@@ -47,6 +47,7 @@ LIBS    = -lm -lpthread -lrt -lcrypt
 ###############################################################################
 
 SRC	=	wiringPi.c						\
+		wiringPi_bpi.c						\
 		wiringSerial.c wiringShift.c				\
 		piHiPri.c piThread.c					\
 		wiringPiSPI.c wiringPiI2C.c				\
@@ -107,12 +108,12 @@ install:	$(DYNAMIC)
 .PHONY:	install-deb
 install-deb:	$(DYNAMIC)
 	$Q echo "[Install Headers: deb]"
-	$Q install -m 0755 -d							~/wiringPi/debian-template/wiringPi/usr/include
-	$Q install -m 0644 $(HEADERS)						~/wiringPi/debian-template/wiringPi/usr/include
+	$Q install -m 0755 -d							../debian-template/wiringPi/usr/include
+	$Q install -m 0644 $(HEADERS)						../debian-template/wiringPi/usr/include
 	$Q echo "[Install Dynamic Lib: deb]"
-	install -m 0755 -d							~/wiringPi/debian-template/wiringPi/usr/lib
-	install -m 0755 libwiringPi.so.$(VERSION)				~/wiringPi/debian-template/wiringPi/usr/lib/libwiringPi.so.$(VERSION)
-	ln -sf ~/wiringPi/debian-template/wiringPi/usr/lib/libwiringPi.so.$(VERSION)	~/wiringPi/debian-template/wiringPi/usr/lib/libwiringPi.so
+	install -m 0755 -d							../debian-template/wiringPi/usr/lib
+	install -m 0755 libwiringPi.so.$(VERSION)				../debian-template/wiringPi/usr/lib/libwiringPi.so.$(VERSION)
+	ln -sf ../debian-template/wiringPi/usr/lib/libwiringPi.so.$(VERSION)	../debian-template/wiringPi/usr/lib/libwiringPi.so
 
 .PHONY:	uninstall
 uninstall:

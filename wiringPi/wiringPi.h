@@ -42,7 +42,8 @@
 
 #define	PI_GPIO_MASK	(0xFFFFFFC0)
 
-// Handy defines
+// Banana Pi implementations
+#include <wiringPi_bpi.h>
 
 // wiringPi modes
 
@@ -114,7 +115,8 @@
 #define	PI_MAKER_EMBEST		2
 #define	PI_MAKER_UNKNOWN	3
 
-extern const char *piModelNames    [20] ;
+
+extern const char *piModelNames    [64] ;
 extern const char *piRevisionNames [16] ;
 extern const char *piMakerNames    [16] ;
 extern const int   piMemorySize    [ 8] ;
@@ -196,6 +198,7 @@ extern struct wiringPiNodeStruct *wiringPiFindNode (int pin) ;
 extern struct wiringPiNodeStruct *wiringPiNewNode  (int pinBase, int numPins) ;
 
 extern void wiringPiVersion	(int *major, int *minor) ;
+extern void wiringPiVersionPatch (int *patch) ;
 extern int  wiringPiSetup       (void) ;
 extern int  wiringPiSetupSys    (void) ;
 extern int  wiringPiSetupGpio   (void) ;

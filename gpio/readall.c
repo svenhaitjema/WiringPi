@@ -34,6 +34,7 @@
 #include <sys/stat.h>
 
 #include <wiringPi.h>
+#include <wiringPi_bpi.h>
 
 extern int wpMode ;
 
@@ -253,6 +254,11 @@ static void allReadall (void)
  *********************************************************************************
  */
 
+const char* szModel     = " +-----+-----+---------+------+---+-Model %s-+---+------+---------+-----+-----+\n";
+const char* szBPiColumn = " | H2+ | wPi |   Name  | Mode | V | Physical | V | Mode | Name    | wPi | H2+ |\n";
+const char* szRPiColumn = " | BCM | wPi |   Name  | Mode | V | Physical | V | Mode | Name    | wPi | BCM |\n";
+const char* szSeparation= " +-----+-----+---------+------+---+----++----+---+------+---------+-----+-----+\n";
+
 void abReadall (int model, int rev)
 {
   int pin ;
@@ -266,22 +272,30 @@ void abReadall (int model, int rev)
     else
       type = "B1" ;
 
-  printf (" +-----+-----+---------+------+---+-Model %s-+---+------+---------+-----+-----+\n", type) ;
-  printf (" | BCM | wPi |   Name  | Mode | V | Physical | V | Mode | Name    | wPi | BCM |\n") ;
-  printf (" +-----+-----+---------+------+---+----++----+---+------+---------+-----+-----+\n") ;
+  printf (szModel, type) ;
+  if (model>=BPI_MODEL_MIN ){
+    printf(szBPiColumn);
+  } else {
+    printf(szRPiColumn);
+  }
+  printf (szSeparation) ;
   for (pin = 1 ; pin <= 26 ; pin += 2)
     readallPhys (pin) ;
 
   if (rev == PI_VERSION_2) // B version 2
   {
-    printf (" +-----+-----+---------+------+---+----++----+---+------+---------+-----+-----+\n") ;
+    printf (szSeparation) ;
     for (pin = 51 ; pin <= 54 ; pin += 2)
       readallPhys (pin) ;
   }
 
-  printf (" +-----+-----+---------+------+---+----++----+---+------+---------+-----+-----+\n") ;
-  printf (" | BCM | wPi |   Name  | Mode | V | Physical | V | Mode | Name    | wPi | BCM |\n") ;
-  printf (" +-----+-----+---------+------+---+-Model %s-+---+------+---------+-----+-----+\n", type) ;
+  printf (szSeparation) ;
+  if (model>=BPI_MODEL_MIN ){
+    printf(szBPiColumn);
+  } else {
+    printf(szRPiColumn);
+  }
+  printf (szModel, type) ;
 }
 
 
@@ -311,6 +325,10 @@ static void plus2header (int model)
     printf (" +-----+-----+---------+------+---+---Pi 3A+-+---+------+---------+-----+-----+\n") ;
   else if (model == PI_MODEL_4B)
     printf (" +-----+-----+---------+------+---+---Pi 4B--+---+------+---------+-----+-----+\n") ;
+  else if (model == BPI_MODEL_M2Z)
+    printf (" +-----+-----+---------+------+---+-BPi M2 Z-+---+------+---------+-----+-----+\n") ;
+  else if (model >= BPI_MODEL_MIN)
+    printf (" +-----+-----+---------+------+---+--BPi ?---+---+------+---------+-----+-----+\n") ;
   else
     printf (" +-----+-----+---------+------+---+---Pi ?---+---+------+---------+-----+-----+\n") ;
 }
@@ -322,13 +340,20 @@ static void piPlusReadall (int model)
 
   plus2header (model) ;
 
-  printf (" | BCM | wPi |   Name  | Mode | V | Physical | V | Mode | Name    | wPi | BCM |\n") ;
-  printf (" +-----+-----+---------+------+---+----++----+---+------+---------+-----+-----+\n") ;
+  if (model>=BPI_MODEL_MIN ){
+    printf(szBPiColumn);
+  } else {
+    printf(szRPiColumn);
+  }
+  printf (szSeparation) ;
   for (pin = 1 ; pin <= 40 ; pin += 2)
     readallPhys (pin) ;
-  printf (" +-----+-----+---------+------+---+----++----+---+------+---------+-----+-----+\n") ;
-  printf (" | BCM | wPi |   Name  | Mode | V | Physical | V | Mode | Name    | wPi | BCM |\n") ;
-
+  printf (szSeparation) ;
+  if (model>=BPI_MODEL_MIN ){
+    printf(szBPiColumn);
+  } else {
+    printf(szRPiColumn);
+  }
   plus2header (model) ;
 }
 
@@ -354,12 +379,13 @@ void doReadall (void)
 
   /**/ if ((model == PI_MODEL_A) || (model == PI_MODEL_B))
     abReadall (model, rev) ;
-  else if ((model == PI_MODEL_BP) || (model == PI_MODEL_AP) ||
+  else if ((model >= BPI_MODEL_MIN) || (model == PI_MODEL_BP) || (model == PI_MODEL_AP) ||
 	(model == PI_MODEL_2)    ||
 	(model == PI_MODEL_3AP)  ||
 	(model == PI_MODEL_3B)   || (model == PI_MODEL_3BP) ||
 	(model == PI_MODEL_4B)   ||
-	(model == PI_MODEL_ZERO) || (model == PI_MODEL_ZERO_W))
+	(model == PI_MODEL_ZERO) || (model == PI_MODEL_ZERO_W) ||
+  model>=BPI_MODEL_MIN)
     piPlusReadall (model) ;
   else if ((model == PI_MODEL_CM) || (model == PI_MODEL_CM3) || ((model == PI_MODEL_CM3P)))
     allReadall () ;

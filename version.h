@@ -1,3 +1,4 @@
-#define VERSION "2.60"
+#define VERSION "2.60.200413"
 #define VERSION_MAJOR 2
 #define VERSION_MINOR 60
+#define VERSION_PATCH 200413

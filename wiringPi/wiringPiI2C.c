@@ -56,6 +56,7 @@
 
 #include "wiringPi.h"
 #include "wiringPiI2C.h"
+#include "wiringPi_bpi.h"
 
 // I2C definitions
 
@@ -202,10 +203,10 @@ int wiringPiI2CSetupInterface (const char *device, int devId)
   int fd ;
 
   if ((fd = open (device, O_RDWR)) < 0)
-    return wiringPiFailure (WPI_ALMOST, "Unable to open I2C device: %s\n", strerror (errno)) ;
+    return wiringPiFailure (WPI_ALMOST, "Unable to open I2C device(%s): %s\n", device, strerror (errno)) ;
 
   if (ioctl (fd, I2C_SLAVE, devId) < 0)
-    return wiringPiFailure (WPI_ALMOST, "Unable to select I2C device: %s\n", strerror (errno)) ;
+    return wiringPiFailure (WPI_ALMOST, "Unable to select I2C device(%d): %s\n", devId, strerror (errno)) ;
 
   return fd ;
 }
@@ -224,6 +225,10 @@ int wiringPiI2CSetup (const int devId)
 
   rev = piGpioLayout () ;
 
+  if (rev>=BPI_MODEL_MIN) {
+    if (bpi_wiringPiSetupI2C(rev, &device) < 0) 
+  	  return wiringPiFailure (WPI_ALMOST, "BPI, NO I2C device defined %s\n", strerror (errno)) ;
+  }
   if (rev == 1)
     device = "/dev/i2c-0" ;
   else

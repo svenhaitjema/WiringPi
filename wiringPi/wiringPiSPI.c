@@ -36,7 +36,7 @@
 #include "wiringPi.h"
 
 #include "wiringPiSPI.h"
-
+#include "wiringPi_bpi.h"
 
 // The SPI bus parameters
 //	Variables as they need to be passed as pointers later on
@@ -103,15 +103,25 @@ int wiringPiSPISetupMode (int channel, int speed, int mode)
 {
   int fd ;
   char spiDev [32] ;
+  const char *device = spiDev;
 
   mode    &= 3 ;	// Mode is 0, 1, 2 or 3
+  /*
+  int rev = piGpioLayout();
+
+  if (rev>=BPI_MODEL_MIN) {
+    if (bpi_wiringPiSetupSPI(rev, &device) < 0)
+      return wiringPiFailure (WPI_ALMOST, "BPI, NO SPI device defined %s\n", strerror (errno)) ;
+  } 
+  else {
+    snprintf (spiDev, 31, "/dev/spidev0.%d", channel) ;
+  }
+  */
+  snprintf (spiDev, 31, "/dev/spidev0.%d", channel) ;
 
 // Channel can be anything - lets hope for the best
 //  channel &= 1 ;	// Channel is 0 or 1
-
-  snprintf (spiDev, 31, "/dev/spidev0.%d", channel) ;
-
-  if ((fd = open (spiDev, O_RDWR)) < 0)
+  if ((fd = open (device, O_RDWR)) < 0)
     return wiringPiFailure (WPI_ALMOST, "Unable to open SPI device: %s\n", strerror (errno)) ;
 
   spiSpeeds [channel] = speed ;

@@ -188,10 +188,10 @@ static          int wiringPiSetuped = FALSE ;
 
 // Locals to hold pointers to the hardware
 
-static volatile unsigned int *gpio ;
-static volatile unsigned int *pwm ;
-static volatile unsigned int *clk ;
-static volatile unsigned int *pads ;
+volatile unsigned int *gpio ;
+volatile unsigned int *pwm ;
+volatile unsigned int *clk ;
+volatile unsigned int *pads ;
 static volatile unsigned int *timer ;
 static volatile unsigned int *timerIrqRaw ;
 
@@ -219,7 +219,8 @@ volatile unsigned int *_wiringPiTimerIrqRaw ;
 
 static volatile unsigned int piGpioBase = 0 ;
 
-const char *piModelNames [20] =
+
+const char *piModelNames [64] =
 {
   "Model A",	//  0
   "Model B",	//  1
@@ -241,6 +242,21 @@ const char *piModelNames [20] =
   "Pi 4B",	// 17
   "Unknown18",	// 18
   "Unknown19",	// 19
+  "Unknown20",	// 20
+  "Banana Pi M1[A20]",	// 21	
+  "Banana Pi M1+[A20]",	// 22
+  "Banana Pi R1[A20]",	// 23
+  "Banana Pi M2[A31s]",	// 24
+  "Banana Pi M3[A83T]",	// 25
+  "Banana Pi M2+[H3]",	// 26
+  "Banana Pi M64[A64]",	// 27
+  "Banana Pi M2 Ultra[R40]",	// 28
+  "Banana Pi M2 Magic[R16]",	// 29
+  "Banana Pi M2+[H2+]",	// 30
+  "Banana Pi M2+[H5]",	// 31
+  "Banana Pi M2 Ultra[V40]",	// 32
+  "Banana Pi M2 Zero[H2+]",	// 33
+  NULL,
 } ;
 
 const char *piRevisionNames [16] =
@@ -270,7 +286,7 @@ const char *piMakerNames [16] =
   "Embest",	//	 2
   "Unknown",	//	 3
   "Embest",	//	 4
-  "Unknown05",	//	 5
+  "BPI-Sinovoip",	//	 5
   "Unknown06",	//	 6
   "Unknown07",	//	 7
   "Unknown08",	//	 8
@@ -288,8 +304,8 @@ const int piMemorySize [8] =
    256,		//	 0
    512,		//	 1
   1024,		//	 2
-     0,		//	 3
-     0,		//	 4
+  2048,		//	 3
+  4096,		//	 4
      0,		//	 5
      0,		//	 6
      0,		//	 7
@@ -301,7 +317,8 @@ static uint64_t epochMilli, epochMicro ;
 
 // Misc
 
-static int wiringPiMode = WPI_MODE_UNINITIALISED ;
+int bpi_found = -1;
+int wiringPiMode = WPI_MODE_UNINITIALISED ;
 static volatile int    pinPass = -1 ;
 static pthread_mutex_t pinMutex ;
 
@@ -317,7 +334,7 @@ int wiringPiTryGpioMem  = FALSE ;
 // sysFds:
 //	Map a file descriptor from the /sys/class/gpio/gpioX/value
 
-static int sysFds [64] =
+int sysFds [64] =
 {
   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
@@ -338,7 +355,7 @@ static void (*isrFunctions [64])(void) ;
 //	Take a Wiring pin (0 through X) and re-map it to the BCM_GPIO pin
 //	Cope for 3 different board revisions here.
 
-static int *pinToGpio ;
+int *pinToGpio = NULL;
 
 // Revision 1, 1.1:
 
@@ -383,7 +400,7 @@ static int pinToGpioR2 [64] =
 //	Cope for 2 different board revisions here.
 //	Also add in the P5 connector, so the P5 pins are 3,4,5,6, so 53,54,55,56
 
-static int *physToGpio ;
+int *physToGpio ;
 
 static int physToGpioR1 [64] =
 {
@@ -753,6 +770,15 @@ int piGpioLayout (void)
   if (gpioLayout != -1)	// No point checking twice
     return gpioLayout ;
 
+  // First look for Banana Pi
+  if (bpi_found == -1) {
+    gpioLayout = bpi_piGpioLayout();
+    if (gpioLayout != -1) {
+      //printf("BPI: gpioLayout(%d)\n", gpioLayout);
+      return gpioLayout;
+    }
+  }
+
   if ((cpuFd = fopen ("/proc/cpuinfo", "r")) == NULL)
     piGpioLayoutOops ("Unable to open /proc/cpuinfo") ;
 
@@ -781,12 +807,8 @@ int piGpioLayout (void)
 #ifdef	DONT_CARE_ANYMORE
   if (! (strstr (line, "BCM2708") || strstr (line, "BCM2709") || strstr (line, "BCM2835")))
   {
-    fprintf (stderr, "Unable to determine hardware version. I see: %s,\n", line) ;
-    fprintf (stderr, " - expecting BCM2708, BCM2709 or BCM2835.\n") ;
-    fprintf (stderr, "If this is a genuine Raspberry Pi then please report this\n") ;
-    fprintf (stderr, "to projects@drogon.net. If this is not a Raspberry Pi then you\n") ;
-    fprintf (stderr, "are on your own as wiringPi is designed to support the\n") ;
-    fprintf (stderr, "Raspberry Pi ONLY.\n") ;
+    fprintf (stderr, "This is a unsupported Raspberry Pi or Banana Pi or a unknown hardware.\n") ;
+    fprintf (stderr, "Please check hardware and WiringPi library support for your system online.\n") ;
     exit (EXIT_FAILURE) ;
   }
 #endif
@@ -964,6 +986,10 @@ void piBoardId (int *model, int *rev, int *mem, int *maker, int *warranty)
 //  unsigned int modelNum ;
 
   (void)piGpioLayout () ;	// Call this first to make sure all's OK. Don't care about the result.
+  if(bpi_found == 1) {
+    bpi_piBoardId(model, rev, mem, maker, warranty);
+    return;
+  }
 
   if ((cpuFd = fopen ("/proc/cpuinfo", "r")) == NULL)
     piGpioLayoutOops ("Unable to open /proc/cpuinfo") ;
@@ -1126,6 +1152,11 @@ void setPadDrive (int group, int value)
 {
   uint32_t wrVal ;
 
+
+  if(bpi_found == 1) {
+    wiringPiFailure (WPI_FATAL, "setPadDrive: feature not supported\n") ;
+    return;
+  }
   if ((wiringPiMode == WPI_MODE_PINS) || (wiringPiMode == WPI_MODE_PHYS) || (wiringPiMode == WPI_MODE_GPIO))
   {
     if ((group < 0) || (group > 2))
@@ -1154,6 +1185,9 @@ int getAlt (int pin)
 {
   int fSel, shift, alt ;
 
+  if(bpi_found == 1) {
+    return bpi_getAlt(pin);
+  }
   pin &= 63 ;
 
   /**/ if (wiringPiMode == WPI_MODE_PINS)
@@ -1180,6 +1214,10 @@ int getAlt (int pin)
 
 void pwmSetMode (int mode)
 {
+  if(bpi_found == 1) {
+    bpi_pwmSetMode(mode);
+    return;
+  }
   if ((wiringPiMode == WPI_MODE_PINS) || (wiringPiMode == WPI_MODE_PHYS) || (wiringPiMode == WPI_MODE_GPIO))
   {
     if (mode == PWM_MODE_MS)
@@ -1199,6 +1237,10 @@ void pwmSetMode (int mode)
 
 void pwmSetRange (unsigned int range)
 {
+  if(bpi_found == 1) {
+    bpi_pwmSetRange(range);
+    return;
+  }
   if ((wiringPiMode == WPI_MODE_PINS) || (wiringPiMode == WPI_MODE_PHYS) || (wiringPiMode == WPI_MODE_GPIO))
   {
     *(pwm + PWM0_RANGE) = range ; delayMicroseconds (10) ;
@@ -1219,6 +1261,10 @@ void pwmSetClock (int divisor)
 {
   uint32_t pwm_control ;
 
+  if(bpi_found == 1) {
+    bpi_pwmSetClock(divisor);
+    return;
+  }
   if (piGpioBase == GPIO_PERI_BASE_2711)
   {
     divisor = 540*divisor/192;
@@ -1269,6 +1315,10 @@ void pwmSetClock (int divisor)
 void gpioClockSet (int pin, int freq)
 {
   int divi, divr, divf ;
+  if(bpi_found == 1) {
+    bpi_gpioClockSet(pin, freq);
+    return;
+  }
 
   pin &= 63 ;
 
@@ -1401,6 +1451,10 @@ void pinModeAlt (int pin, int mode)
 {
   int fSel, shift ;
 
+  if(bpi_found == 1) {
+    bpi_pinModeAlt(pin, mode);
+    return;
+  }
   setupCheck ("pinModeAlt") ;
 
   if ((pin & PI_GPIO_MASK) == 0)		// On-board pin
@@ -1432,6 +1486,10 @@ void pinMode (int pin, int mode)
   struct wiringPiNodeStruct *node = wiringPiNodes ;
   int origPin = pin ;
 
+  if(bpi_found == 1) {
+    bpi_pinMode(pin, mode);
+    return;
+  }
   setupCheck ("pinMode") ;
 
   if ((pin & PI_GPIO_MASK) == 0)		// On-board pin
@@ -1511,6 +1569,10 @@ void pullUpDnControl (int pin, int pud)
 {
   struct wiringPiNodeStruct *node = wiringPiNodes ;
 
+  if(bpi_found == 1) {
+    bpi_pullUpDnControl(pin, pud);
+    return;
+  }
   setupCheck ("pullUpDnControl") ;
 
   if ((pin & PI_GPIO_MASK) == 0)		// On-Board Pin
@@ -1572,6 +1634,10 @@ int digitalRead (int pin)
 {
   char c ;
   struct wiringPiNodeStruct *node = wiringPiNodes ;
+
+  if(bpi_found == 1) {
+    return bpi_digitalRead(pin);
+  }
   if ((pin & PI_GPIO_MASK) == 0)		// On-Board Pin
   {
     /**/ if (wiringPiMode == WPI_MODE_GPIO_SYS)	// Sys mode
@@ -1635,6 +1701,10 @@ void digitalWrite (int pin, int value)
 {
   struct wiringPiNodeStruct *node = wiringPiNodes ;
 
+  if(bpi_found == 1) {
+    bpi_digitalWrite(pin, value);
+    return;
+  }
   if ((pin & PI_GPIO_MASK) == 0)		// On-Board Pin
   {
     /**/ if (wiringPiMode == WPI_MODE_GPIO_SYS)	// Sys mode
@@ -1698,6 +1768,10 @@ void pwmWrite (int pin, int value)
 {
   struct wiringPiNodeStruct *node = wiringPiNodes ;
 
+  if(bpi_found == 1) {
+    bpi_pwmWrite(pin, value);
+    return;
+  }
   setupCheck ("pwmWrite") ;
 
   if ((pin & PI_GPIO_MASK) == 0)		// On-Board Pin
@@ -2000,6 +2074,9 @@ int wiringPiISR (int pin, int mode, void (*function)(void))
   char  c ;
   int   bcmGpioPin ;
 
+  if(bpi_found == 1) {
+    return wiringPiFailure (WPI_FATAL, "wiringPiISR: feature not supported (%d)\n", pin) ;
+  }
   if ((pin < 0) || (pin > 63))
     return wiringPiFailure (WPI_FATAL, "wiringPiISR: pin must be 0-63 (%d)\n", pin) ;
 
@@ -2087,7 +2164,7 @@ int wiringPiISR (int pin, int mode, void (*function)(void))
  *********************************************************************************
  */
 
-static void initialiseEpoch (void)
+void initialiseEpoch (void)
 {
 #ifdef	OLD_WAY
   struct timeval tv ;
@@ -2238,6 +2315,11 @@ void wiringPiVersion (int *major, int *minor)
   *minor = VERSION_MINOR ;
 }
 
+void wiringPiVersionPatch (int *patch)
+{
+  *patch = VERSION_PATCH ;
+}
+
 
 /*
  * wiringPiSetup:
@@ -2287,6 +2369,11 @@ int wiringPiSetup (void)
     wiringPiMode = WPI_MODE_GPIO ;
   else
     wiringPiMode = WPI_MODE_PINS ;
+
+  if(bpi_found == 1) {
+    bpi_wiringPiSetup();
+    return 0;
+  }
 
   /**/ if (piGpioLayout () == 1)	// A, B, Rev 1, 1.1
   {
