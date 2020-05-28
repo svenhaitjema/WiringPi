@@ -20,8 +20,10 @@ For support, comments, questions, etc please join the WiringPi Discord channel: 
 
 ## Modifcations by GC2
 
-Brunch bpi-pi2-merge is a combination of [Unofficial WiringPi](https://github.com/WiringPi/WiringPi) and [BPI-SINOVOIP /BPI-WiringPi2](https://github.com/BPI-SINOVOIP/BPI-WiringPi2).  
+This is a combination of [Unofficial WiringPi](https://github.com/WiringPi/WiringPi) and [BPI-SINOVOIP /BPI-WiringPi2](https://github.com/BPI-SINOVOIP/BPI-WiringPi2) with a couple of bug fixes and build script changes.
 The binary (tools and library) can support both worlds Raspberry Pi and Banana Pi M2 Zero.
 
-We provide no support! Please contact base repository maintainers if you you problems.
+We provide no support!
+
+Please contact base repository maintainers if you have problems.
 
