@@ -23,14 +23,25 @@
 #    along with wiringPi.  If not, see <http://www.gnu.org/licenses/>.
 #################################################################################
 
+
+echo "This script is not needed anymore - please change version.h directly." 
+echo "If you like use it, the build scrpt will only look at version.h" 
+echo ""
 echo Updating to version: `cat VERSION`
 
 rm -f version.h
 vMaj=`cut -d. -f1 VERSION`
 vMin=`cut -d. -f2 VERSION`
+vPatch=`cut -d. -f3 VERSION`
 echo "#define VERSION \"`cat VERSION`\"" > version.h
 echo "#define VERSION_MAJOR $vMaj"		>> version.h
 echo "#define VERSION_MINOR $vMin"		>> version.h
+echo "#define VERSION_PATCH $vPatch"		>> version.h
+echo version.h:
+cat version.h
+: '
+# This part will not be needed anymore. Debian Version is 
+# replace in control file, no need to rewrite the hole file.
 
 rm -f debian-template/wiringPi/DEBIAN/control
 cat > debian-template/wiringPi/DEBIAN/control <<EOF
@@ -45,3 +56,4 @@ Description: The wiringPi libraries, headers and gpio command
   Libraries to allow GPIO access on a Raspberry Pi from C and C++
   and BASIC programs as well as from the command-line
 EOF
+'
