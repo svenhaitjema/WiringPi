@@ -1022,6 +1022,22 @@ void bpi_pinModeAlt (int pin, int mode)
   }
 }
 
+// Get SoC pin number from wiringPi pin and mode
+int bpi_pinNo(int pin) {
+  int bpi_pin = -1;
+  if (wiringPiMode == WPI_MODE_PINS) {
+    bpi_pin = pinToGpio_BP[pin] ;
+  } else if (wiringPiMode == WPI_MODE_PHYS) {
+    bpi_pin = physToGpio_BP[pin] ;
+  } else if (wiringPiMode == WPI_MODE_GPIO) {
+    bpi_pin = pinTobcm_BP[pin];
+  }
+  if (-1 == bpi_pin) {  /*VCC or GND return directly*/
+	    printf("[%s:L%d] the pin:%d (mode: %d) is invaild, please check it over!\n", __func__,  __LINE__, pin, wiringPiMode);
+  }
+  return bpi_pin;
+}
+
 
 void bpi_pinMode (int pin, int mode)
 {

@@ -2074,21 +2074,27 @@ int wiringPiISR (int pin, int mode, void (*function)(void))
   char  c ;
   int   bcmGpioPin ;
 
-  if(bpi_found == 1) {
-    return wiringPiFailure (WPI_FATAL, "wiringPiISR: feature not supported (%d)\n", pin) ;
+  if (bpi_found == 1) {
+    bcmGpioPin = bpi_pinNo(pin); // bcmGpioPin is SoC pin no, this works the same as bcm because of /sys/class/gpio/ 
+    if ((pin < 0) || (pin > 356)) { // valid range unknown
+      return wiringPiFailure (WPI_FATAL, "wiringPiISR: pin must be 0-356 (%d)\n", pin) ;
+    }
+  } else {
+    if ((pin < 0) || (pin > 63))
+      return wiringPiFailure (WPI_FATAL, "wiringPiISR: pin must be 0-63 (%d)\n", pin) ;
+
+    /**/ if (wiringPiMode == WPI_MODE_UNINITIALISED)
+      return wiringPiFailure (WPI_FATAL, "wiringPiISR: wiringPi has not been initialised. Unable to continue.\n") ;
+    else if (wiringPiMode == WPI_MODE_PINS)
+      bcmGpioPin = pinToGpio [pin] ;
+    else if (wiringPiMode == WPI_MODE_PHYS)
+      bcmGpioPin = physToGpio [pin] ;
+    else
+      bcmGpioPin = pin ;
   }
-  if ((pin < 0) || (pin > 63))
-    return wiringPiFailure (WPI_FATAL, "wiringPiISR: pin must be 0-63 (%d)\n", pin) ;
-
-  /**/ if (wiringPiMode == WPI_MODE_UNINITIALISED)
-    return wiringPiFailure (WPI_FATAL, "wiringPiISR: wiringPi has not been initialised. Unable to continue.\n") ;
-  else if (wiringPiMode == WPI_MODE_PINS)
-    bcmGpioPin = pinToGpio [pin] ;
-  else if (wiringPiMode == WPI_MODE_PHYS)
-    bcmGpioPin = physToGpio [pin] ;
-  else
-    bcmGpioPin = pin ;
-
+  if (bcmGpioPin < 0) {
+    return wiringPiFailure (WPI_FATAL, "wiringPiISR: pin invalid (%d)\n", pin) ;
+  }
 // Now export the pin and set the right edge
 //	We're going to use the gpio program to do this, so it assumes
 //	a full installation of wiringPi. It's a bit 'clunky', but it
@@ -2105,7 +2111,7 @@ int wiringPiISR (int pin, int mode, void (*function)(void))
       modeS = "both" ;
 
     sprintf (pinS, "%d", bcmGpioPin) ;
-
+ 
     if ((pid = fork ()) < 0)	// Fail
       return wiringPiFailure (WPI_FATAL, "wiringPiISR: fork failed: %s\n", strerror (errno)) ;
 
@@ -2113,16 +2119,18 @@ int wiringPiISR (int pin, int mode, void (*function)(void))
     {
       /**/ if (access ("/usr/local/bin/gpio", X_OK) == 0)
       {
-	execl ("/usr/local/bin/gpio", "gpio", "edge", pinS, modeS, (char *)NULL) ;
-	return wiringPiFailure (WPI_FATAL, "wiringPiISR: execl failed: %s\n", strerror (errno)) ;
+        if (wiringPiDebug) printf(" /usr/local/bin/gpio, set edge %s for pin %s\n",  modeS, pinS);
+        execl ("/usr/local/bin/gpio", "gpio", "edge", pinS, modeS, (char *)NULL) ;
+        return wiringPiFailure (WPI_FATAL, "wiringPiISR: execl failed: %s\n", strerror (errno)) ;
       }
       else if (access ("/usr/bin/gpio", X_OK) == 0)
       {
-	execl ("/usr/bin/gpio", "gpio", "edge", pinS, modeS, (char *)NULL) ;
-	return wiringPiFailure (WPI_FATAL, "wiringPiISR: execl failed: %s\n", strerror (errno)) ;
+        if (wiringPiDebug) printf(" /usr/bin/gpio, set edge %s for pin %s\n",  modeS, pinS);
+        execl ("/usr/bin/gpio", "gpio", "edge", pinS, modeS, (char *)NULL) ;
+        return wiringPiFailure (WPI_FATAL, "wiringPiISR: execl failed: %s\n", strerror (errno)) ;
       }
       else
-	return wiringPiFailure (WPI_FATAL, "wiringPiISR: Can't find gpio program\n") ;
+        return wiringPiFailure (WPI_FATAL, "wiringPiISR: Can't find gpio program\n") ;
     }
     else		// Parent, wait
       wait (NULL) ;
