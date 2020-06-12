@@ -2000,10 +2000,14 @@ int waitForInterrupt (int pin, int mS)
   uint8_t c ;
   struct pollfd polls ;
 
-  /**/ if (wiringPiMode == WPI_MODE_PINS)
-    pin = pinToGpio [pin] ;
-  else if (wiringPiMode == WPI_MODE_PHYS)
-    pin = physToGpio [pin] ;
+ if (bpi_found == 1) {
+    pin = bpi_pinNo(pin);
+  } else {
+    /**/ if (wiringPiMode == WPI_MODE_PINS)
+      pin = pinToGpio [pin] ;
+    else if (wiringPiMode == WPI_MODE_PHYS)
+      pin = physToGpio [pin] ;
+  }
 
   if ((fd = sysFds [pin]) == -1)
     return -2 ;
@@ -2074,15 +2078,15 @@ int wiringPiISR (int pin, int mode, void (*function)(void))
   char  c ;
   int   bcmGpioPin ;
 
+  if (pin<0 || pin>63) {
+      return wiringPiFailure (WPI_FATAL, "wiringPiISR: pin %d must be 0-63, use correct wiringpi or bcm numbering\n", pin) ;
+  }
   if (bpi_found == 1) {
     bcmGpioPin = bpi_pinNo(pin); // bcmGpioPin is SoC pin no, this works the same as bcm because of /sys/class/gpio/ 
-    if ((pin < 0) || (pin > 356)) { // valid range unknown
-      return wiringPiFailure (WPI_FATAL, "wiringPiISR: pin must be 0-356 (%d)\n", pin) ;
-    }
+    /*if ((bcmGpioPin > 356)) { // valid range unknown
+      return wiringPiFailure (WPI_FATAL, "wiringPiISR: SOC pin must be 0-356 (%d)\n", pin) ;
+    }*/
   } else {
-    if ((pin < 0) || (pin > 63))
-      return wiringPiFailure (WPI_FATAL, "wiringPiISR: pin must be 0-63 (%d)\n", pin) ;
-
     /**/ if (wiringPiMode == WPI_MODE_UNINITIALISED)
       return wiringPiFailure (WPI_FATAL, "wiringPiISR: wiringPi has not been initialised. Unable to continue.\n") ;
     else if (wiringPiMode == WPI_MODE_PINS)
