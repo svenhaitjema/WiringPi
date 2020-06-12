@@ -22,8 +22,9 @@ For support, comments, questions, etc please join the WiringPi Discord channel: 
 ## Debug
 
 running your program with: 
+```
 WIRINGPI_DEBUG=1 ./myprogramnamegoeshere
-
+```
 ## Modifcations by GC2
 
 This is a combination of [Unofficial WiringPi](https://github.com/WiringPi/WiringPi) and [BPI-SINOVOIP /BPI-WiringPi2](https://github.com/BPI-SINOVOIP/BPI-WiringPi2) with a couple of bug fixes and build script changes.
