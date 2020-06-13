@@ -52,7 +52,8 @@ extern int  bpi_wiringPiSetupSPI    (int board_model, const char **device);
 extern int  bpi_piGpioLayout        (void);
 extern void bpi_piBoardId           (int *model, int *rev, int *mem, int *maker, int *warranty);
 
-extern          int  bpi_pinNo               (int pin) ;
+extern          int  bpi_pinNo               (int pin);
+extern          int  bpi_EgdePinValid        (int socpin);
 extern          void bpi_pinModeAlt          (int pin, int mode) ;
 extern          void bpi_pinMode             (int pin, int mode) ;
 extern          void bpi_pullUpDnControl     (int pin, int pud) ;

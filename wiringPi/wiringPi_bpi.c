@@ -162,6 +162,7 @@ static int syspin [64] =
   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
 } ;
 
+/*
 static int edge [64] =
 {
   -1, -1, -1, -1, 4, -1, -1, 7, 
@@ -171,7 +172,7 @@ static int edge [64] =
   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
 } ;
-
+*/
 
 
 static int BP_PIN_MASK[14][32] =  //[BANK]  [INDEX]
@@ -1034,6 +1035,18 @@ int bpi_pinNo(int pin) {
   }
   if (-1 == bpi_pin) {  /*VCC or GND return directly*/
 	    printf("[%s:L%d] the pin:%d (mode: %d) is invaild, please check it over!\n", __func__,  __LINE__, pin, wiringPiMode);
+  }
+  return bpi_pin;
+}
+
+// Ask if SoC pin supports edge (interrupt)?
+int bpi_EgdePinValid(int bpi_pin) {
+  switch(piGpioLayout()) {
+    case BPI_MODEL_M2Z:
+      if (bpi_pin>31 && bpi_pin<192) { //H3/H2+ SoC  all PA- and PG-pins support interrupts, the others don't
+        return -1;
+      }
+      break;
   }
   return bpi_pin;
 }
