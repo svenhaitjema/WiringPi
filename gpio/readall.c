@@ -81,6 +81,13 @@ static char *alts [] =
   "IN", "OUT", "ALT5", "ALT4", "ALT0", "ALT1", "ALT2", "ALT3"
 } ;
 
+
+static char *alts_H3 [] =
+{
+  "IN", "OUT", "ALT2", "ALT3", "RES4", "RES5", "EINT", "OFF"
+} ;
+
+
 static int physToWpi [64] =
 {
   -1,           // 0
@@ -146,8 +153,54 @@ static char *physNames [64] =
   "GPIO.17", "GPIO.18",
   "GPIO.19", "GPIO.20",
    NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,
-} ;
+};
 
+static char *physNames_H3 [64] =
+{
+  NULL,
+
+  "   3.3v", "5v     ",
+  "  SDA.1", "5v     ",
+  "  SCL.1", "0v     ",
+  "GPIO. 4", "TxD    ",
+  "     0v", "RxD    ",
+  "GPIO.17", "GPIO.18",
+  "GPIO.27", "0v     ",
+  "GPIO.22", "GPIO.23",
+  "   3.3v", "GPIO.24",
+  "   MOSI", "0v     ",
+  "   MISO", "GPIO.25",
+  "   SCLK", "CE0    ",
+  "     0v", "CE1    ",
+  "  SDA.0", "SCL.0  ",
+  "GPIO. 5", "0v     ",
+  "GPIO. 6", "GPIO.12",
+  "GPIO.13", "0v     ",
+  "GPIO.19", "GPIO.16",
+  "GPIO.26", "GPIO.20",
+  "     0v", "GPIO.21",
+       NULL, NULL,
+       NULL, NULL,
+       NULL, NULL,
+       NULL, NULL,
+       NULL, NULL,
+  "      ?", "      ?",
+  "      ?", "      ?",
+   NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,
+};
+
+
+const char* getAltText(int pin, int model) {
+  int nAlt = getAlt(pin);
+  if (nAlt>7) {
+    return "?";
+  }
+  if (model>=BPI_MODEL_MIN) {
+    return alts_H3[nAlt];
+  } else {
+    return alts[nAlt];
+  }
+}
 
 /*
  * readallPhys:
@@ -156,7 +209,7 @@ static char *physNames [64] =
  *********************************************************************************
  */
 
-static void readallPhys (int physPin)
+static void readallPhys(int physPin,int model)
 {
   int pin ;
 
@@ -165,7 +218,11 @@ static void readallPhys (int physPin)
   else
     printf (" | %3d | %3d", physPinToGpio (physPin), physToWpi [physPin]) ;
 
-  printf (" | %s", physNames [physPin]) ;
+  if (model>=BPI_MODEL_MIN) {
+    printf (" | %s", physNames_H3[physPin]);
+  } else {
+    printf (" | %s", physNames[physPin]);
+  }
 
   if (physToWpi [physPin] == -1)
     printf (" |      |  ") ;
@@ -177,9 +234,9 @@ static void readallPhys (int physPin)
       pin = physPin ;
     else
       pin = physToWpi [physPin] ;
-
-    printf (" | %4s", alts [getAlt (pin)]) ;
-    printf (" | %d", digitalRead (pin)) ;
+    
+    printf (" | %4s", getAltText(pin, model));
+    printf (" | %d", digitalRead (pin));
   }
 
 // Pin numbers:
@@ -190,7 +247,7 @@ static void readallPhys (int physPin)
 
 // Same, reversed
 
-  if (physToWpi [physPin] == -1)
+  if (physToWpi[physPin] == -1)
     printf (" |   |     ") ;
   else
   {
@@ -199,15 +256,19 @@ static void readallPhys (int physPin)
     else if (wpMode == WPI_MODE_PHYS)
       pin = physPin ;
     else
-      pin = physToWpi [physPin] ;
+      pin = physToWpi[physPin] ;
 
-    printf (" | %d", digitalRead (pin)) ;
-    printf (" | %-4s", alts [getAlt (pin)]) ;
+    printf (" | %d", digitalRead(pin));
+    printf (" | %-4s", getAltText(pin, model));
   }
 
-  printf (" | %-5s", physNames [physPin]) ;
+  if (model>=BPI_MODEL_MIN) {
+    printf (" | %-5s", physNames_H3[physPin]);
+  } else {
+    printf (" | %-5s", physNames[physPin]);
+  }
 
-  if (physToWpi     [physPin] == -1)
+  if (physToWpi[physPin] == -1)
     printf (" |     |    ") ;
   else
     printf (" | %-3d | %-3d", physToWpi [physPin], physPinToGpio (physPin)) ;
@@ -255,8 +316,8 @@ static void allReadall (void)
  */
 
 const char* szModel     = " +-----+-----+---------+------+---+-Model %s-+---+------+---------+-----+-----+\n";
-const char* szBPiColumn = " | H2+ | wPi |   Name  | Mode | V | Physical | V | Mode | Name    | wPi | H2+ |\n";
-const char* szRPiColumn = " | BCM | wPi |   Name  | Mode | V | Physical | V | Mode | Name    | wPi | BCM |\n";
+const char* szBPiColumn = " | H2+ | wPi | NameBCM | Mode | V | Physical | V | Mode | NameBCM | wPi | H2+ |\n";
+const char* szRPiColumn = " | BCM | wPi |   Name  | Mode | V | Physical | V | Mode |   Name  | wPi | BCM |\n";
 const char* szSeparation= " +-----+-----+---------+------+---+----++----+---+------+---------+-----+-----+\n";
 
 void abReadall (int model, int rev)
@@ -280,13 +341,13 @@ void abReadall (int model, int rev)
   }
   printf (szSeparation) ;
   for (pin = 1 ; pin <= 26 ; pin += 2)
-    readallPhys (pin) ;
+    readallPhys(pin, model);
 
   if (rev == PI_VERSION_2) // B version 2
   {
     printf (szSeparation) ;
     for (pin = 51 ; pin <= 54 ; pin += 2)
-      readallPhys (pin) ;
+      readallPhys(pin, model);
   }
 
   printf (szSeparation) ;
@@ -347,7 +408,7 @@ static void piPlusReadall (int model)
   }
   printf (szSeparation) ;
   for (pin = 1 ; pin <= 40 ; pin += 2)
-    readallPhys (pin) ;
+    readallPhys(pin, model);
   printf (szSeparation) ;
   if (model>=BPI_MODEL_MIN ){
     printf(szBPiColumn);
