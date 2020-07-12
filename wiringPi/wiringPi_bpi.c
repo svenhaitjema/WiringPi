@@ -1177,10 +1177,18 @@ void bpi_pullUpDnControl (int pin, int pud)
   }
 }
 
+int bpi_sysFd_digitalRead(int pin) {
+  char c;
+
+  if (wiringPiDebug)
+    printf ("[%s:L%d] read pin %d, fd=%d\n", __func__, __LINE__, pin, sysFds[pin]);
+  lseek(sysFds[pin], 0L, SEEK_SET);
+  read(sysFds[pin], &c, 1);
+  return (c == '0') ? LOW : HIGH;
+}
 
 int bpi_digitalRead (int pin)
 {
-  char c ;
   struct wiringPiNodeStruct *node = wiringPiNodes ;
 
   if ((pin & PI_GPIO_MASK) == 0)		// On-Board Pin
@@ -1189,7 +1197,7 @@ int bpi_digitalRead (int pin)
     {
       if(pin==0)
       {
-	if (wiringPiDebug)
+      if (wiringPiDebug)
           printf("%d %s,%d invalid pin,please check it over.\n",pin,__func__, __LINE__);
         return 0;
       }
@@ -1205,11 +1213,7 @@ int bpi_digitalRead (int pin)
           printf ("pin %d sysFds -1.%s,%d\n", pin ,__func__, __LINE__) ;
         return LOW ;
       }
-      if (wiringPiDebug)
-        printf ("pin %d :%d.%s,%d\n", pin ,sysFds [pin],__func__, __LINE__) ;
-      lseek  (sysFds [pin], 0L, SEEK_SET) ;
-      read   (sysFds [pin], &c, 1) ;
-      return (c == '0') ? LOW : HIGH ;
+      return bpi_sysFddigitalRead(pin);
     }
     else if (wiringPiMode == WPI_MODE_PINS)
       pin = pinToGpio_BP [pin] ;
@@ -1223,6 +1227,9 @@ int bpi_digitalRead (int pin)
       if (wiringPiDebug)
         printf("[%s:L%d] the pin:%d is invaild,please check it over!\n", __func__,  __LINE__, pin);
       return LOW;
+    }
+    if (sysFds[pin] != -1) { // if edge is active sysFds is valid, memmap read is not working, need to read via sysfs
+      return bpi_sysFd_digitalRead(pin);
     }
     return sunxi_digitalRead(pin);
   }
