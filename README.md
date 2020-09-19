@@ -1,7 +1,7 @@
-Unofficial WiringPi Mirror Fork
-===============================
+Base version is the unofficial WiringPi Mirror Fork
+====================================================
 
-This is an unofficial mirror of WiringPi to support ports (Python/Ruby/etc).  With the
+The base is an unofficial mirror of WiringPi to support ports (Python/Ruby/etc).  With the
 [end of official development](http://wiringpi.com/wiringpi-deprecated/), this repository
 has become a mirror of the last "official" source release as well as a source for small
 updates to support newer hardware (primarily for use by the ports).
@@ -18,14 +18,7 @@ other changes will not be accepted.
 
 For support, comments, questions, etc please join the WiringPi Discord channel: https://discord.gg/SM4WUVG
 
-
-## Debug
-
-running your program with: 
-```
-WIRINGPI_DEBUG=1 ./myprogramnamegoeshere
-```
-## Modifcations by GC2
+## Modifcations (by GC2)
 
 This is a combination of [Unofficial WiringPi](https://github.com/WiringPi/WiringPi) and [BPI-SINOVOIP /BPI-WiringPi2](https://github.com/BPI-SINOVOIP/BPI-WiringPi2) with a couple of bug fixes and build script changes.
 The binary (tools and library) can support both worlds Raspberry Pi and Banana Pi M2 Zero.
@@ -33,4 +26,12 @@ The binary (tools and library) can support both worlds Raspberry Pi and Banana P
 We provide no support!
 
 Please contact base repository maintainers if you have problems.
+
+
+## Debug
+
+running your program with: 
+```
+WIRINGPI_DEBUG=1 ./myprogramnamegoeshere
+```
 
