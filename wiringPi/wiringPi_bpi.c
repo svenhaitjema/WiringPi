@@ -1213,7 +1213,7 @@ int bpi_digitalRead (int pin)
           printf ("pin %d sysFds -1.%s,%d\n", pin ,__func__, __LINE__) ;
         return LOW ;
       }
-      return bpi_sysFddigitalRead(pin);
+      return bpi_sysFd_digitalRead(pin);
     }
     else if (wiringPiMode == WPI_MODE_PINS)
       pin = pinToGpio_BP [pin] ;
